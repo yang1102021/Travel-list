@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingItem } from '../types';
 import { krwToTWD, formatTWD } from '../utils/currency';
 import { compressImage } from '../utils/imageCompressor';
-import { X, Plus, Minus, Camera, MapPin, User, Loader2 } from 'lucide-react';
+import { getItemLocations, formatLocationsString } from '../utils/itemHelpers';
+import { X, Plus, Minus, Camera, MapPin, User, Loader2, Check } from 'lucide-react';
 import { GinkgoIcon } from './GinkgoIcon';
 
 interface AddItemModalProps {
@@ -31,7 +32,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   // 4 Required core fields
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [location, setLocation] = useState('');
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [buyer, setBuyer] = useState('自己');
 
   // Optional fields
@@ -50,7 +51,8 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     if (editingItem) {
       setName(editingItem.name);
       setQuantity(editingItem.quantity || 1);
-      setLocation(editingItem.location || '');
+      const locs = getItemLocations(editingItem);
+      setSelectedLocations(locs.length > 0 ? locs : [locations[0] || 'Olive Young']);
       setBuyer(editingItem.buyer || '自己');
       setActualPriceKRW(editingItem.actualPriceKRW ? editingItem.actualPriceKRW.toString() : '');
       setNote(editingItem.note || '');
@@ -62,7 +64,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       // Clean defaults for new item
       setName('');
       setQuantity(1);
-      setLocation(locations[0] || 'Olive Young');
+      setSelectedLocations([locations[0] || 'Olive Young']);
       setBuyer(buyers[0] || '自己');
       setActualPriceKRW('');
       setNote('');
@@ -115,19 +117,38 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     }
   };
 
+  const toggleLocation = (loc: string) => {
+    setSelectedLocations(prev => {
+      if (prev.includes(loc)) {
+        return prev.filter(l => l !== loc);
+      } else {
+        return [...prev, loc];
+      }
+    });
+  };
+
+  const handleAddCustomLoc = () => {
+    const trimmed = customLocationInput.trim();
+    if (!trimmed) return;
+    onAddCustomLocation(trimmed);
+    if (!selectedLocations.includes(trimmed)) {
+      setSelectedLocations(prev => [...prev, trimmed]);
+    }
+    setCustomLocationInput('');
+    setIsCustomLocation(false);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const finalLocation = isCustomLocation ? customLocationInput.trim() : location;
     const finalBuyer = isCustomBuyer ? customBuyerInput.trim() : buyer;
-
-    if (isCustomLocation && customLocationInput.trim()) {
-      onAddCustomLocation(customLocationInput.trim());
-    }
     if (isCustomBuyer && customBuyerInput.trim()) {
       onAddCustomBuyer(customBuyerInput.trim());
     }
+
+    const finalLocations = selectedLocations.length > 0 ? selectedLocations : ['未指定'];
+    const locationString = formatLocationsString(finalLocations);
 
     const priceNum = parseFloat(actualPriceKRW);
 
@@ -135,7 +156,8 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       {
         name: name.trim(),
         quantity: Math.max(1, quantity),
-        location: finalLocation || '未指定',
+        location: locationString,
+        locations: finalLocations,
         buyer: finalBuyer || '自己',
         isPurchased: editingItem ? editingItem.isPurchased : false,
         actualPriceKRW: !isNaN(priceNum) && priceNum > 0 ? priceNum : undefined,
@@ -218,63 +240,95 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             </div>
           </div>
 
-          {/* 3. 哪裡買 (Location) */}
+          {/* 3. 哪裡買 (Location - Multi-Select Supported!) */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-[#3e352e] flex items-center gap-1">
+              <label className="text-xs font-bold text-[#3e352e] flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5 text-[#b08968]" />
-                3. 哪裡買 (購買地點)
+                <span>3. 哪裡買</span>
+                <span className="text-[10px] font-medium text-[#7f5539] bg-[#ede8df] px-1.5 py-0.5 rounded-md">
+                  可複選
+                </span>
               </label>
               <button
                 type="button"
                 onClick={() => setIsCustomLocation(!isCustomLocation)}
                 className="text-[11px] text-[#7f5539] font-semibold hover:underline cursor-pointer"
               >
-                {isCustomLocation ? '選擇常見地點' : '+ 自訂地點'}
+                {isCustomLocation ? '收起自訂' : '+ 自訂地點'}
               </button>
             </div>
 
-            {isCustomLocation ? (
-              <input
-                type="text"
-                value={customLocationInput}
-                onChange={e => setCustomLocationInput(e.target.value)}
-                placeholder="輸入購買地點，如：漢南洞 Mardi、東大門 DDP..."
-                className="w-full px-3.5 py-2 text-xs bg-white border border-[#b08968] rounded-xl text-[#3e352e] focus:outline-hidden"
-              />
-            ) : (
-              <div className="space-y-2">
-                <select
-                  value={location}
-                  onChange={e => setLocation(e.target.value)}
-                  className="w-full px-3 py-2 text-xs bg-white border border-[#ded7cb] rounded-xl text-[#3e352e] cursor-pointer"
+            {/* Custom Location Input */}
+            {isCustomLocation && (
+              <div className="flex items-center gap-1.5 mb-2">
+                <input
+                  type="text"
+                  value={customLocationInput}
+                  onChange={e => setCustomLocationInput(e.target.value)}
+                  placeholder="輸入自訂地點，如：現代百貨、弘大潮牌..."
+                  className="flex-1 px-3 py-1.5 text-xs bg-white border border-[#b08968] rounded-xl text-[#3e352e] focus:outline-hidden"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomLoc();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomLoc}
+                  className="px-3 py-1.5 text-xs font-bold text-white bg-[#7f5539] hover:bg-[#6b472f] rounded-xl cursor-pointer shrink-0"
                 >
-                  {locations.map(loc => (
-                    <option key={loc} value={loc}>
-                      {loc}
-                    </option>
-                  ))}
-                </select>
+                  新增並勾選
+                </button>
+              </div>
+            )}
 
-                {/* Quick touch chips */}
-                <div className="flex flex-wrap gap-1.5">
-                  {locations.slice(0, 6).map(loc => (
+            {/* Multi-Select Touch Chips */}
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-1.5">
+                {locations.map(loc => {
+                  const isSelected = selectedLocations.includes(loc);
+                  return (
                     <button
                       key={loc}
                       type="button"
-                      onClick={() => setLocation(loc)}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
-                        location === loc
-                          ? 'bg-[#7f5539] text-white shadow-2xs'
-                          : 'bg-[#ede8df] text-[#5c4d43] hover:bg-[#e2dbcf]'
+                      onClick={() => toggleLocation(loc)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-1.5 border ${
+                        isSelected
+                          ? 'bg-[#7f5539] text-white border-[#7f5539] shadow-2xs font-semibold'
+                          : 'bg-[#ede8df] text-[#5c4d43] border-transparent hover:bg-[#e2dbcf]'
                       }`}
                     >
-                      {loc}
+                      {isSelected && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
+                      <span>{loc}</span>
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-            )}
+
+              {/* Selected Locations Summary */}
+              <div className="flex items-center justify-between text-[11px] text-[#7d7165] pt-0.5">
+                <span className="truncate pr-2">
+                  已勾選：
+                  <span className="font-semibold text-[#3e352e] ml-1">
+                    {selectedLocations.length > 0
+                      ? selectedLocations.join('、')
+                      : '未選擇（點擊上方標籤可複選多個）'}
+                  </span>
+                </span>
+                {selectedLocations.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLocations([])}
+                    className="text-[#9c8e80] hover:text-[#5c4d43] underline cursor-pointer shrink-0"
+                  >
+                    清除
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* 4. 購買人 (Buyer) */}

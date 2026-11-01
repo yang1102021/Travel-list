@@ -24,6 +24,7 @@ import { ImageViewerModal } from './components/ImageViewerModal';
 import { InstallAppModal } from './components/InstallAppModal';
 import { GinkgoIcon } from './components/GinkgoIcon';
 import { QUOKKA_IMAGE, QUOKKA_FALLBACK } from './assets/quokkaImage';
+import { getItemLocations } from './utils/itemHelpers';
 
 // Icons
 import { Plus, RotateCcw, Trash2 } from 'lucide-react';
@@ -37,7 +38,7 @@ export default function App() {
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<ItemFilterStatus>('all');
-  const [selectedLocation, setSelectedLocation] = useState<string>('all');
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedBuyer, setSelectedBuyer] = useState<string>('all');
 
   // Modals
@@ -140,7 +141,16 @@ export default function App() {
     if (!locations.includes(newLoc)) {
       setLocations(prev => [newLoc, ...prev]);
     }
-    setSelectedLocation(newLoc);
+  };
+
+  const handleToggleFilterLocation = (loc: string) => {
+    setSelectedLocations(prev =>
+      prev.includes(loc) ? prev.filter(l => l !== loc) : [...prev, loc]
+    );
+  };
+
+  const handleClearFilterLocations = () => {
+    setSelectedLocations([]);
   };
 
   const handleAddCustomBuyer = (newBuyer: string) => {
@@ -166,16 +176,18 @@ export default function App() {
     .filter(i => i.isPurchased)
     .reduce((sum, i) => sum + (i.actualPriceKRW || 0), 0);
 
-  // Filtered Items
+  // Filtered Items (supports multi-location matching)
   const filteredItems = useMemo(() => {
     return items.filter(item => {
       // Status filter
       if (statusFilter === 'purchased' && !item.isPurchased) return false;
       if (statusFilter === 'unpurchased' && item.isPurchased) return false;
 
-      // Location filter
-      if (selectedLocation !== 'all' && item.location !== selectedLocation) {
-        return false;
+      // Location filter (multi-select: matches if item has at least one of the chosen locations)
+      if (selectedLocations.length > 0) {
+        const itemLocs = getItemLocations(item);
+        const matches = itemLocs.some(loc => selectedLocations.includes(loc));
+        if (!matches) return false;
       }
 
       // Buyer filter
@@ -185,11 +197,11 @@ export default function App() {
 
       return true;
     });
-  }, [items, statusFilter, selectedLocation, selectedBuyer]);
+  }, [items, statusFilter, selectedLocations, selectedBuyer]);
 
   // Unique lists for dropdowns
   const availableLocations = Array.from(
-    new Set([...locations, ...items.map(i => i.location).filter(Boolean)])
+    new Set([...locations, ...items.flatMap(i => getItemLocations(i)).filter(Boolean)])
   );
   const availableBuyers = Array.from(
     new Set([...buyers, ...items.map(i => i.buyer).filter(Boolean)])
@@ -222,16 +234,17 @@ export default function App() {
           purchasedCount={purchasedCount}
         />
 
-        {/* 3. Filter Bar: 哪裡買 / 購買人 */}
+        {/* 3. Filter Bar: 哪裡買 (支援複選) / 購買人 */}
         <FilterBar
           locations={availableLocations}
           buyers={availableBuyers}
-          selectedLocation={selectedLocation}
+          selectedLocations={selectedLocations}
           selectedBuyer={selectedBuyer}
-          onSelectLocation={setSelectedLocation}
+          onToggleLocation={handleToggleFilterLocation}
+          onClearLocations={handleClearFilterLocations}
           onSelectBuyer={setSelectedBuyer}
           onResetFilters={() => {
-            setSelectedLocation('all');
+            setSelectedLocations([]);
             setSelectedBuyer('all');
           }}
         />
@@ -301,7 +314,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedLocation('all');
+                    setSelectedLocations([]);
                     setSelectedBuyer('all');
                     setStatusFilter('all');
                   }}

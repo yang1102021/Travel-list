@@ -1,6 +1,7 @@
 import React from 'react';
 import { ShoppingItem } from '../types';
 import { formatKRW, formatTWD, krwToTWD } from '../utils/currency';
+import { getItemLocations } from '../utils/itemHelpers';
 import {
   Check,
   MapPin,
@@ -88,11 +89,22 @@ export const MobileItemCard: React.FC<MobileItemCardProps> = ({
 
             {/* Clean Metadata Line: Location + Buyer + Notes */}
             <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[#7d7165]">
-              {/* 哪裡買 (Location) */}
-              <span className="inline-flex items-center gap-1 text-[#5c4d43] font-medium whitespace-nowrap">
+              {/* 哪裡買 (Location / Locations) */}
+              <div className="inline-flex items-center gap-1 flex-wrap text-[#5c4d43] font-medium">
                 <MapPin className="w-3 h-3 text-[#b08968] shrink-0" />
-                {item.location || '未指定地點'}
-              </span>
+                {getItemLocations(item).length > 0 ? (
+                  getItemLocations(item).map(loc => (
+                    <span
+                      key={loc}
+                      className="bg-[#ede8df] text-[#4a3f35] px-1.5 py-0.5 rounded-md text-[11px] font-medium whitespace-nowrap"
+                    >
+                      {loc}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-[#8c7d70] text-[11px]">未指定地點</span>
+                )}
+              </div>
 
               <span aria-hidden="true" className="text-[#ded7cb]">·</span>
 

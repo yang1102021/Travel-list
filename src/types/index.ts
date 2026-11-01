@@ -4,7 +4,8 @@ export interface ShoppingItem {
   id: string;
   name: string; // 商品品項
   quantity: number; // 數量
-  location: string; // 哪裡買
+  location: string; // 哪裡買 (字串相容：如 'Olive Young、大創')
+  locations?: string[]; // 哪裡買複選地點清單
   buyer: string; // 購買人
   isPurchased: boolean; // 是否已購買
   actualPriceKRW?: number; // 實際結帳金額 (韓元 ₩)
