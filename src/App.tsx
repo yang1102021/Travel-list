@@ -23,6 +23,7 @@ import { ExchangeRateModal } from './components/ExchangeRateModal';
 import { ImageViewerModal } from './components/ImageViewerModal';
 import { InstallAppModal } from './components/InstallAppModal';
 import { GinkgoIcon } from './components/GinkgoIcon';
+import { QUOKKA_IMAGE, QUOKKA_FALLBACK } from './assets/quokkaImage';
 
 // Icons
 import { Plus, RotateCcw, Trash2 } from 'lucide-react';
@@ -258,12 +259,17 @@ export default function App() {
             /* Clean Empty State with illustrated Quokka */
             <div className="py-14 px-4 text-center">
               <div className="relative inline-block mb-3">
-                <img
-                  src="/src/assets/images/seoul_shopping_quokka_icon_1793536319118.jpg"
-                  alt="首爾購物矮袋鼠"
-                  className="w-24 h-24 rounded-3xl mx-auto shadow-md border-2 border-[#b08968] ring-4 ring-[#ede8df] object-cover"
-                />
-                <span className="absolute -bottom-2 -right-1 bg-white p-1 rounded-full shadow-xs border border-[#ded7cb]">
+                <div className="w-24 h-24 rounded-3xl mx-auto shadow-md border-2 border-[#b08968] ring-4 ring-[#ede8df] overflow-hidden bg-[#f5ebe0] flex items-center justify-center">
+                  <img
+                    src={QUOKKA_IMAGE}
+                    alt="首爾購物矮袋鼠"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = QUOKKA_FALLBACK;
+                    }}
+                  />
+                </div>
+                <span className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-xs border border-[#ded7cb]">
                   <GinkgoIcon className="w-4 h-4 text-amber-500" />
                 </span>
               </div>

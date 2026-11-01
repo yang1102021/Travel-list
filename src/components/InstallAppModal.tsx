@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Smartphone, Share, PlusSquare, Sparkles } from 'lucide-react';
 import { GinkgoIcon } from './GinkgoIcon';
+import { QUOKKA_IMAGE, QUOKKA_FALLBACK } from '../assets/quokkaImage';
 
 interface InstallAppModalProps {
   isOpen: boolean;
@@ -32,11 +33,16 @@ export const InstallAppModal: React.FC<InstallAppModalProps> = ({ isOpen, onClos
         {/* Icon Preview */}
         <div className="flex flex-col items-center justify-center py-2 text-center">
           <div className="relative">
-            <img
-              src="/src/assets/images/seoul_shopping_quokka_icon_1793536319118.jpg"
-              alt="App Icon"
-              className="w-20 h-20 rounded-2xl shadow-md border-2 border-[#b08968] ring-4 ring-[#ede8df] object-cover"
-            />
+            <div className="w-20 h-20 rounded-2xl shadow-md border-2 border-[#b08968] ring-4 ring-[#ede8df] overflow-hidden bg-[#f5ebe0] flex items-center justify-center">
+              <img
+                src={QUOKKA_IMAGE}
+                alt="App Icon"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = QUOKKA_FALLBACK;
+                }}
+              />
+            </div>
             <span className="absolute -top-2 -right-2 bg-amber-500 text-white rounded-full p-1 shadow-xs">
               <Sparkles className="w-3.5 h-3.5" />
             </span>
