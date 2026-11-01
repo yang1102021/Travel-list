@@ -1,0 +1,6 @@
+{
+  "name": "首爾旅遊購物助手 - Seoul Shopping Planner",
+  "description": "專為首爾自由行設計的智慧購物清單與預算助手，提供清晰分類、購買人/代購分帳分配、韓元/台幣雙幣即時換算與自動總預算統計。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
