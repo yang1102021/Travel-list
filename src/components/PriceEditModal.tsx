@@ -78,7 +78,8 @@ export const PriceEditModal: React.FC<PriceEditModalProps> = ({
               <input
                 type="number"
                 min="0"
-                step="100"
+                step="any"
+                inputMode="decimal"
                 autoFocus
                 value={priceInput}
                 onChange={e => setPriceInput(e.target.value)}

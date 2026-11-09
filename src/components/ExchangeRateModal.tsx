@@ -57,8 +57,9 @@ export const ExchangeRateModal: React.FC<ExchangeRateModalProps> = ({
             <div className="relative">
               <input
                 type="number"
-                step="0.1"
-                min="0.1"
+                step="any"
+                min="0.0001"
+                inputMode="decimal"
                 required
                 autoFocus
                 value={rateInput}

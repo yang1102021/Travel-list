@@ -432,7 +432,8 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               <input
                 type="number"
                 min="0"
-                step="100"
+                step="any"
+                inputMode="decimal"
                 value={actualPriceKRW}
                 onChange={e => setActualPriceKRW(e.target.value)}
                 placeholder="例如：25000"
